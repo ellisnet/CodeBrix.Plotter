@@ -12,6 +12,23 @@
     </PackageReference>
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
+    <!--
+      A real, known font for the SkiaRenderContext.TypefaceResolver tests, so a resolver can
+      return typefaces loaded from files rather than from the host's font set. Only the package's
+      files are wanted (the .ttf set under lib/net10.0), not its assembly or build hooks, so every
+      asset is excluded and GeneratePathProperty exposes the package folder to the copy below.
+    -->
+    <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.209.315" GeneratePathProperty="true" ExcludeAssets="all" />
+  </ItemGroup>
+
+  <!--
+    The two Roboto faces the TypefaceResolver tests load, copied out of the font package into
+    the test output's Fonts folder (the package ships them as plain lib-folder files, which
+    NuGet does not copy to a consumer's output by itself).
+  -->
+  <ItemGroup>
+    <None Include="$(PkgCodeBrix_Platform_Fonts_Roboto_OflLicenseForever)\lib\net10.0\CodeBrix.Platform.Fonts.Roboto\Fonts\Roboto-Regular.ttf" Link="Fonts\Roboto-Regular.ttf" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(PkgCodeBrix_Platform_Fonts_Roboto_OflLicenseForever)\lib\net10.0\CodeBrix.Platform.Fonts.Roboto\Fonts\Roboto-Bold.ttf" Link="Fonts\Roboto-Bold.ttf" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <!--

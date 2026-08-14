@@ -20,10 +20,11 @@ using global::SkiaSharp.HarfBuzz;
 public class SkiaRenderContext : IRenderContext, IDisposable
 {
     private readonly Dictionary<FontDescriptor, SKShaper> shaperCache = new Dictionary<FontDescriptor, SKShaper>();
-    private readonly Dictionary<FontDescriptor, SKTypeface> typefaceCache = new Dictionary<FontDescriptor, SKTypeface>();
+    private readonly Dictionary<FontDescriptor, CachedTypeface> typefaceCache = new Dictionary<FontDescriptor, CachedTypeface>();
     private SKFont font = new SKFont();
     private SKPaint paint = new SKPaint();
     private SKPathBuilder pathBuilder = new SKPathBuilder();
+    private TypefaceResolver typefaceResolver;
 
     private readonly Dictionary<int, string> _fontWeights = new Dictionary<int, string>()
     {
@@ -55,6 +56,44 @@ public class SkiaRenderContext : IRenderContext, IDisposable
     /// Gets or sets the <see cref="SKCanvas"/> the <see cref="SkiaRenderContext"/> renders to. This must be set before any draw calls.
     /// </summary>
     public SKCanvas SkCanvas { get; set; }
+
+    /// <summary>
+    /// Gets or sets the delegate that resolves a font family and weight to a typeface. The
+    /// default is <c>null</c>, which resolves through the system font lookup
+    /// (<see cref="SKTypeface.FromFamilyName(string, SKFontStyle)"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// While a resolver is assigned it owns typeface resolution completely: every font family a
+    /// draw or measure call names is passed to the resolver, and the system font lookup is never
+    /// consulted - not even when the resolver cannot resolve the family. A resolver should
+    /// return its own default typeface for families it does not recognize (a <c>null</c> return
+    /// is treated as <see cref="SKTypeface.Default"/>). Hosts that must never render system
+    /// fonts enforce that by assigning a resolver.
+    /// </para>
+    /// <para>
+    /// Resolved typefaces are cached per font family and weight, exactly like system-resolved
+    /// ones, so a resolver is consulted once per distinct family/weight pair. Assigning a
+    /// different resolver (or <c>null</c>) clears the cache. Resolver-supplied typefaces remain
+    /// owned by the resolver and are never disposed by the render context; system-resolved
+    /// typefaces are disposed by the context as before.
+    /// </para>
+    /// </remarks>
+    public TypefaceResolver TypefaceResolver
+    {
+        get => this.typefaceResolver;
+
+        set
+        {
+            if (this.typefaceResolver == value)
+            {
+                return;
+            }
+
+            this.typefaceResolver = value;
+            this.ClearFontCaches();
+        }
+    }
 
     /// <summary>
     /// Gets or sets a value indicating whether text shaping should be used when rendering text.
@@ -507,9 +546,43 @@ public class SkiaRenderContext : IRenderContext, IDisposable
         this.pathBuilder?.Dispose();
         this.pathBuilder = null;
 
-        foreach (var typeface in this.typefaceCache.Values)
+        this.ClearFontCaches();
+    }
+
+    /// <summary>
+    /// Creates the typeface for the specified font family and weight, consulting the
+    /// <see cref="TypefaceResolver"/> when one is assigned and the system font lookup otherwise.
+    /// </summary>
+    /// <param name="fontFamily">The font family.</param>
+    /// <param name="fontWeight">The font weight.</param>
+    /// <returns>The typeface, tagged with whether this instance owns (and must dispose) it.</returns>
+    private CachedTypeface CreateTypeface(string fontFamily, double fontWeight)
+    {
+        var resolver = this.typefaceResolver;
+        if (resolver != null)
         {
-            typeface.Dispose();
+            // The resolver owns resolution completely: no system font fallback, and the
+            // resolved typeface stays owned by the resolver rather than by this cache.
+            var resolved = resolver(fontFamily, fontWeight);
+            return new CachedTypeface(resolved ?? SKTypeface.Default, isOwned: false);
+        }
+
+        var typeface = SKTypeface.FromFamilyName(fontFamily, new SKFontStyle((int)fontWeight, (int)SKFontStyleWidth.Normal, SKFontStyleSlant.Upright));
+        return new CachedTypeface(typeface, isOwned: true);
+    }
+
+    /// <summary>
+    /// Clears the typeface and shaper caches, disposing the typefaces this instance owns and
+    /// every shaper (shapers are always created here).
+    /// </summary>
+    private void ClearFontCaches()
+    {
+        foreach (var cachedTypeface in this.typefaceCache.Values)
+        {
+            if (cachedTypeface.IsOwned)
+            {
+                cachedTypeface.Typeface.Dispose();
+            }
         }
 
         this.typefaceCache.Clear();
@@ -892,11 +965,13 @@ public class SkiaRenderContext : IRenderContext, IDisposable
     private SKPaint GetTextPaint(string fontFamily, double fontSize, double fontWeight, out SKFont skFont, out SKShaper shaper)
     {
         var fontDescriptor = new FontDescriptor(fontFamily, fontWeight);
-        if (!this.typefaceCache.TryGetValue(fontDescriptor, out var typeface))
+        if (!this.typefaceCache.TryGetValue(fontDescriptor, out var cachedTypeface))
         {
-            typeface = SKTypeface.FromFamilyName(fontFamily, new SKFontStyle((int)fontWeight, (int)SKFontStyleWidth.Normal, SKFontStyleSlant.Upright));
-            this.typefaceCache.Add(fontDescriptor, typeface);
+            cachedTypeface = this.CreateTypeface(fontFamily, fontWeight);
+            this.typefaceCache.Add(fontDescriptor, cachedTypeface);
         }
+
+        var typeface = cachedTypeface.Typeface;
 
         if (this.UseTextShaping)
         {
@@ -954,6 +1029,35 @@ public class SkiaRenderContext : IRenderContext, IDisposable
     private bool ShouldUseAntiAliasing(EdgeRenderingMode edgeRenderingMode)
     {
         return edgeRenderingMode != EdgeRenderingMode.PreferSpeed;
+    }
+
+    /// <summary>
+    /// Represents a cached typeface, tagged with whether the cache owns (and must dispose) it.
+    /// </summary>
+    private struct CachedTypeface
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CachedTypeface"/> struct.
+        /// </summary>
+        /// <param name="typeface">The typeface.</param>
+        /// <param name="isOwned">A value indicating whether the cache owns the typeface.</param>
+        public CachedTypeface(SKTypeface typeface, bool isOwned)
+        {
+            this.Typeface = typeface;
+            this.IsOwned = isOwned;
+        }
+
+        /// <summary>
+        /// The typeface.
+        /// </summary>
+        public SKTypeface Typeface { get; }
+
+        /// <summary>
+        /// Whether the cache owns the typeface and must dispose it. System-resolved typefaces
+        /// are owned; typefaces supplied by a <see cref="TypefaceResolver"/> are not - they stay
+        /// owned by the resolver.
+        /// </summary>
+        public bool IsOwned { get; }
     }
 
     /// <summary>

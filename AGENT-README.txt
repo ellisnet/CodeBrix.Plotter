@@ -242,6 +242,44 @@ Text is shaped through HarfBuzz when the string needs it, and measured with
 SKFont; RendersToScreen selects full hinting versus none.
 
 
+Font resolution and the TypefaceResolver -- CodeBrix.Plotter.Skia
+-----------------------------------------------------------------
+By default SkiaRenderContext resolves a font family name through the system
+font lookup (SKTypeface.FromFamilyName). The TypefaceResolver property (its
+delegate type is also named TypefaceResolver, in the same namespace) replaces
+that lookup:
+
+    context.TypefaceResolver = (fontFamily, fontWeight) =>
+        myFonts.TryGetValue(fontFamily, out SKTypeface found)
+            ? found
+            : myDefaultTypeface;
+
+The contract, precisely:
+
+  * While a resolver is assigned it owns resolution COMPLETELY. Every font
+    family a draw or measure call names goes to the resolver; the system font
+    lookup is never consulted, not even when the resolver cannot resolve the
+    family. A host that must never render system fonts (the CodeBrix.Platform
+    PlotterView add-in, for example) enforces that rule by assigning a
+    resolver.
+  * A resolver that cannot resolve a family should return its own default or
+    fallback typeface rather than null. A null return is treated as
+    SKTypeface.Default - still no system family lookup.
+  * fontWeight arrives as the numeric weight (400 normal, 700 bold - the
+    FontWeights constants).
+  * Results are cached per (family, weight) pair, exactly like
+    system-resolved typefaces, so the resolver runs once per distinct pair,
+    not once per draw.
+  * Assigning a different resolver (or null) clears the typeface and shaper
+    caches. Re-assigning the delegate already in place is a no-op.
+  * OWNERSHIP: typefaces returned by a resolver stay owned by the resolver -
+    the render context never disposes them, neither on resolver change nor in
+    Dispose(). (Typefaces from the system lookup are owned and disposed by
+    the context, as always.)
+  * TypefaceResolver is null by default, which is exactly the pre-existing
+    behavior.
+
+
 Exporters
 ---------
 CodeBrix.Plotter.Skia -- SkiaSharp-backed, and the ones to prefer:
@@ -430,6 +468,11 @@ COMMON PITFALLS TO AVOID
     PlotView control here.
   * Reusing a SkiaRenderContext across canvases without resetting SkCanvas, or
     disposing the SKCanvas it was handed -- it does not own the canvas.
+  * Expecting a TypefaceResolver miss to fall back to the system font lookup.
+    It never does -- return a default typeface from the resolver instead of
+    null. And do not dispose a resolver-supplied typeface while the render
+    context might still draw with it; the context caches it but the resolver
+    owns it.
   * Using OxyPlot names. There is no OxyPlot namespace and no Oxy* type in this
     library; they are CodeBrix.Plotter and Plotter*.
 
