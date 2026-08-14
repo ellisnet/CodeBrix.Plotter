@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>PicoScope.Scope</AssemblyName>
+    <RootNamespace>PicoScope.Scope</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Device-agnostic by construction: this project has no interop and no
+    reference to anything Windows-specific, so it cannot grow a dependency on a
+    physical scope by accident. The real device lives in PicoScope.Scope.Windows.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\CodeBrix.Plotter\CodeBrix.Plotter.csproj" />
+  </ItemGroup>
+
+</Project>

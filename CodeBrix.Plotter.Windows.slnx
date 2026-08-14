@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="samples/PicoScope/PicoScope.WinUI/PicoScope.WinUI.csproj">
+      <Platform Project="x64" />
+      <Deploy />
+    </Project>
+    <Project Path="samples/PicoScope/PicoScope.Wpf/PicoScope.Wpf.csproj" />
+  </Folder>
+  <Folder Name="/Samples/PicoScope.Scope/">
+    <Project Path="samples/PicoScope/PicoScope.Scope/PicoScope.Scope.csproj" />
+    <Project Path="samples/PicoScope/PicoScope.Scope.Windows/PicoScope.Scope.Windows.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="AGENT-README.txt" />
+    <File Path="icon-codebrix-128.png" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="THIRD-PARTY-NOTICES.txt" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/CodeBrix.Plotter.Tests/CodeBrix.Plotter.Tests.csproj" />
+  </Folder>
+  <Project Path="src/CodeBrix.Plotter/CodeBrix.Plotter.csproj" />
+</Solution>

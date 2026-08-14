@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PicoScope.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PicoScope.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

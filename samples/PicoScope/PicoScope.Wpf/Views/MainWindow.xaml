@@ -1,0 +1,82 @@
+<Window x:Class="PicoScope.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:PicoScope.ViewModels"
+        xmlns:skia="clr-namespace:SkiaSharp.Views.WPF;assembly=SkiaSharp.Views.WPF"
+        Title="PicoScope - CodeBrix.Plotter sample" Height="700" Width="1100"
+        Background="#1E1E24">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
+            <TextBlock Text="PicoScope" FontSize="22" FontWeight="SemiBold" Foreground="#F0F0F5" />
+            <TextBlock Text="{Binding DeviceText}" FontSize="13" Foreground="#9A9AA8"
+                       VerticalAlignment="Bottom" Margin="12,0,0,3" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" Text="{Binding CapabilityText}" FontSize="11" Foreground="#7A7A88"
+                   Margin="0,0,0,10" TextWrapping="Wrap" />
+
+        <!-- Controls -->
+        <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="Single capture" Command="{Binding CaptureCommand}"
+                    MinWidth="110" Margin="0,0,8,0" Padding="10,5" />
+            <Button Content="Start streaming" Command="{Binding StartStreamingCommand}"
+                    MinWidth="110" Margin="0,0,8,0" Padding="10,5" />
+            <Button Content="Stop" Command="{Binding StopStreamingCommand}"
+                    MinWidth="80" Margin="0,0,20,0" Padding="10,5" />
+
+            <TextBlock Text="Range" Foreground="#C0C0CC" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox ItemsSource="{Binding AvailableRanges}" SelectedItem="{Binding SelectedRange}"
+                      MinWidth="90" Margin="0,0,20,0" VerticalAlignment="Center" />
+
+            <TextBlock Text="Generator" Foreground="#C0C0CC" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox ItemsSource="{Binding AvailableWaveTypes}" SelectedItem="{Binding SelectedWaveType}"
+                      MinWidth="100" Margin="0,0,6,0" VerticalAlignment="Center" />
+            <TextBox Text="{Binding GeneratorFrequencyHz}" MinWidth="70" Margin="0,0,4,0"
+                     VerticalAlignment="Center" Padding="4,3" />
+            <TextBlock Text="Hz" Foreground="#C0C0CC" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <Button Content="Toggle" Command="{Binding SignalGeneratorCommand}"
+                    MinWidth="70" Margin="0,0,20,0" Padding="10,5" />
+
+            <Button Content="Flash LED" Command="{Binding FlashLedCommand}"
+                    MinWidth="80" Margin="0,0,20,0" Padding="10,5" />
+
+            <!-- Chart-only visibility: both channels keep acquiring -->
+            <TextBlock Text="Show" Foreground="#C0C0CC" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <CheckBox Content="A" IsChecked="{Binding ShowChannelA}" Foreground="#E6C828"
+                      VerticalAlignment="Center" Margin="0,0,10,0" />
+            <CheckBox Content="B" IsChecked="{Binding ShowChannelB}" Foreground="#4696EB"
+                      VerticalAlignment="Center" />
+        </WrapPanel>
+
+        <!-- The chart -->
+        <Border Grid.Row="3" BorderBrush="#3A3A46" BorderThickness="1">
+            <skia:SKElement x:Name="ChartCanvas" />
+        </Border>
+
+        <!-- Status -->
+        <Grid Grid.Row="4" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="#C0C0CC"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock Grid.Column="1" Text="{Binding SimulatedBadge}" Foreground="#E0A030"
+                       FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0" />
+        </Grid>
+    </Grid>
+</Window>

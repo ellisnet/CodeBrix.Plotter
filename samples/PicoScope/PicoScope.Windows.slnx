@@ -1,0 +1,22 @@
+<Solution>
+  <!-- PicoScope.Windows.slnx
+       The PicoScope sample on its own: the two device libraries plus the WPF and
+       WinUI heads, with CodeBrix.Plotter referenced from src/ so the sample can
+       be worked on without opening the whole repository solution.
+
+       PicoScope.Scope is device-agnostic (net10.0) and owns IPicoScope, the
+       simulator and the charting; PicoScope.Scope.Windows (net10.0-windows) adds
+       the ps2000 interop and the real-hardware implementation. -->
+  <Folder Name="/Heads/">
+    <Project Path="PicoScope.WinUI/PicoScope.WinUI.csproj">
+      <Platform Project="x64" />
+      <Deploy />
+    </Project>
+    <Project Path="PicoScope.Wpf/PicoScope.Wpf.csproj" />
+  </Folder>
+  <Folder Name="/Scope/">
+    <Project Path="PicoScope.Scope/PicoScope.Scope.csproj" />
+    <Project Path="PicoScope.Scope.Windows/PicoScope.Scope.Windows.csproj" />
+  </Folder>
+  <Project Path="../../src/CodeBrix.Plotter/CodeBrix.Plotter.csproj" />
+</Solution>
