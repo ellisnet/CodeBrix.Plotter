@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="SilverAssertions.ApacheLicenseForever" Version="1.0.164.180" />
+  </ItemGroup>
+
+  <!--
+    The library takes SkiaSharp as a managed-only dependency, so that a
+    consuming application chooses the native asset package matching its own
+    target platform. The test project renders for real, so it needs the native
+    libSkiaSharp for whichever host the tests are executed on. The package is
+    selected from the build host's OS rather than referenced unconditionally,
+    so that a `dotnet test` on any of the three desktop platforms restores only
+    the native assets it can actually load.
+
+    SkiaSharp already brings SkiaSharp.NativeAssets.Win32 and
+    SkiaSharp.NativeAssets.macOS in transitively for the net10.0 target
+    framework; naming them here is deliberate, so the test project's native
+    dependency is explicit on every platform rather than implicit on two of
+    them and explicit on the third.
+  -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.0" />
+    <!--
+      Text shaping runs through HarfBuzz, which has its own native library.
+      HarfBuzzSharp pulls in the Win32 and macOS natives transitively but not
+      the Linux one, so shaping any text on Linux fails to load libHarfBuzzSharp
+      without this. Its version tracks HarfBuzzSharp, not SkiaSharp.
+    -->
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.151.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.151.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CodeBrix.Plotter\CodeBrix.Plotter.csproj" />
+  </ItemGroup>
+
+  <!--
+    Data files for the ported ExampleLibrary. The examples read these through
+    Assembly.GetManifestResourceStream, so the names have to keep resolving as
+    <RootNamespace>.ExampleLibrary.Resources.<file>.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="ExampleLibrary\Resources\Bergensbanen.csv" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\DodgyContourData.tsv" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\OxyPlot.png" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\west0479.mtx" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\WorldPopulation.xml" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\X.txt" />
+    <EmbeddedResource Include="ExampleLibrary\Resources\Y.txt" />
+  </ItemGroup>
+
+  <!--
+    Files the tests open from the working directory: the SVG schemas the SVG
+    output is validated against, and the images the decoders are run over.
+  -->
+  <ItemGroup>
+    <Content Include="Schemas\svg.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Schemas\xlink.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Schemas\xml.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Svg\svg.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Svg\xlink.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Svg\xml.xsd" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test.jpg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test_8bit.bmp" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test_8bit.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test_24bit.bmp" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test_32bit.bmp" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Imaging\TestImages\test_32bit.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

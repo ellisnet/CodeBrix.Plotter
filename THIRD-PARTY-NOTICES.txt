@@ -1,0 +1,155 @@
+THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
+
+CodeBrix.Plotter is a plotting library for .NET that renders charts, graphs and
+plots onto a SkiaSharp canvas. It is a port and adaptation of the OxyPlot
+project; the source code of this repository is derived from OxyPlot and carries
+the notice reproduced below.
+
+================================================================================
+1. OxyPlot
+================================================================================
+
+Project:      OxyPlot
+Source:       https://github.com/oxyplot/oxyplot
+Baseline:     branch `develop`, commit 6b49a4ee ("Feature/upgrade
+              oxyplot.skiasharp", #2161) -- the released v2.2.0 tag (commit
+              989df42a) plus the three subsequent develop commits that add
+              net10.0 target frameworks and upgrade the SkiaSharp renderer.
+Copyright:    Copyright (c) 2014 OxyPlot contributors
+              (see the AUTHORS and CONTRIBUTORS files in the upstream
+              repository for the full list of named contributors)
+License:      MIT
+
+Scope of the port
+-----------------
+
+CodeBrix.Plotter incorporates the source code of exactly two upstream projects,
+which together make up the OxyPlot.Core and OxyPlot.SkiaSharp NuGet packages:
+
+  * Source/OxyPlot            -> src/CodeBrix.Plotter/
+                                 (273 files: the platform-independent plot
+                                 model, axes, series, annotations, legends,
+                                 the plot controller and input model, the
+                                 rendering abstractions, and the built-in
+                                 image, PDF and SVG writers)
+
+  * Source/OxyPlot.SkiaSharp  -> src/CodeBrix.Plotter/Skia/
+                                 (7 files: SkiaRenderContext, SkiaExtensions,
+                                 RenderTarget, and the PNG, JPEG, PDF and SVG
+                                 exporters)
+
+The upstream test suites for those two projects are likewise incorporated:
+
+  * Source/OxyPlot.Tests            -> tests/CodeBrix.Plotter.Tests/
+  * Source/OxyPlot.SkiaSharp.Tests  -> tests/CodeBrix.Plotter.Tests/Skia/
+  * Source/Examples/ExampleLibrary  -> tests/CodeBrix.Plotter.Tests/ExampleLibrary/
+                                       (test-support code only -- the example
+                                       models the upstream tests enumerate; it
+                                       is NOT part of the shipped library or
+                                       the NuGet package)
+
+No other upstream project is incorporated. In particular OxyPlot.Core.Drawing,
+OxyPlot.ImageSharp, OxyPlot.Pdf, OxyPlot.SkiaSharp.Wpf, OxyPlot.Wpf,
+OxyPlot.Wpf.Shared and OxyPlot.WindowsForms -- and their test projects -- are
+outside the scope of this port and none of their source appears here.
+
+Modifications made during the port
+----------------------------------
+
+  * Namespaces renamed: OxyPlot[.Sub] -> CodeBrix.Plotter[.Sub], and
+    OxyPlot.SkiaSharp -> CodeBrix.Plotter.Skia. Every ported file records its
+    origin with a `//was previously: <upstream-namespace>;` comment on its
+    namespace declaration.
+  * Public types prefixed `Oxy` renamed to the `Plotter` prefix, e.g.
+    OxyColor -> PlotterColor, OxyRect -> PlotterRect, OxySize -> PlotterSize,
+    OxyThickness -> PlotterThickness, OxyPen -> PlotterPen,
+    OxyImage -> PlotterImage, OxyPalette -> PlotterPalette, and the
+    OxyMouse*/OxyTouch*/OxyKey* input event-argument and gesture families.
+    Source files were renamed to match.
+  * Retargeted from the upstream multi-targeting (netstandard2.0, net462,
+    net6.0, net8.0, net10.0) to net10.0 only. Conditional-compilation branches
+    that cannot execute on .NET 10 were removed along with their `#if` /
+    `#elif` / `#else` / `#endif` directives; the branch that .NET 10 would
+    actually compile was kept. This also removed the never-defined upstream
+    author flags SUPPORTLABELPLACEMENT, BCL_COMPRESSION and X, together with
+    the unfinished code they guarded.
+  * The two upstream assemblies were merged into a single assembly and a
+    single NuGet package.
+  * Block-scoped namespaces converted to file-scoped namespaces, with the
+    `using` directives that upstream placed inside the namespace block hoisted
+    above it.
+  * `#nullable enable` directives and nullable-reference-type `?` annotations
+    removed, per the CodeBrix family convention of building with nullable
+    reference types disabled.
+  * Members marked `[Obsolete]` upstream were deleted, along with their
+    internal call sites. Upstream suppressed the resulting CS0618 warnings
+    project-wide; CodeBrix libraries do not suppress warnings. This removed
+    the legacy input-event layer (the Mouse*/Touch*/KeyDown events on Element
+    and Model and the Handle*/On* methods that raised them), the
+    notification-only events PlotModel.TrackerChanged / Updated / Updating,
+    Axis.AxisChanged / TransformChanged, Element.SelectionChanged and
+    ElementCollection<T>.CollectionChanged, the core `PdfExporter` (whose
+    replacement, the SkiaSharp one, ships in the same package), the
+    `OldCandleStickSeries` and `CandleStickAndVolumeSeries` types, and the
+    `DateTimeAxis.ToDateTime(double)` overload.
+  * As a consequence, the ported ExampleLibrary omits the upstream example
+    files whose examples existed only to demonstrate that removed surface --
+    `MouseEventExamples.cs`, `OldCandleStickSeriesExamples.cs` and
+    `CandleStickAndVolumeSeriesExamples.cs` -- along with individual examples
+    and event-wiring statements elsewhere that referenced it. Every other
+    example is carried over and still produces the same plot.
+  * `TileMapAnnotation` in the ported ExampleLibrary was moved from
+    `HttpWebRequest` to `HttpClient`, because the former is obsolete on modern
+    .NET (SYSLIB0014).
+  * Strong-name signing removed (the upstream .snk key files are not
+    redistributed here).
+  * The SkiaSharp renderer was migrated from SkiaSharp 3.119.2 to SkiaSharp
+    4.151.0 and its current API (SKFont-based text measurement and drawing,
+    SKSamplingOptions-based image filtering), so that the library builds
+    warning-free against the SkiaSharp version used across the CodeBrix family.
+  * The test suite was converted from NUnit to xUnit.v3 with SilverAssertions.
+    The upstream suite's single use of NSubstitute was replaced with the test
+    project's own hand-written stubs, so no mocking framework is used.
+  * Upstream per-file copyright headers are preserved verbatim; only the
+    `file="..."` attribute was updated where a file was renamed.
+
+Upstream license text
+---------------------
+
+MIT License
+
+Copyright (c) 2014 OxyPlot contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+
+Jeremy Ellis and contributors license the CodeBrix.Plotter project
+to you under the terms set forth in the LICENSE file, which is located at
+the root of this repository. That license is also the MIT License, which is
+compatible with the license of the incorporated OxyPlot source.
+
+If you have any questions about any third-party code or services referenced
+here, or if you believe that any third-party code has been included in
+CodeBrix.Plotter in error, please open a new issue at:
+https://github.com/ellisnet/CodeBrix.Plotter/issues
+
+================================================================================
+
+END OF THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
