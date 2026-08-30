@@ -11,8 +11,10 @@
     <Project Path="samples/PicoScope/PicoScope.Scope.Windows/PicoScope.Scope.Windows.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
     <File Path="AGENT-README.txt" />
     <File Path="EXTRAS-README.txt" />
+    <File Path="global.json" />
     <File Path="icon-codebrix-128.png" />
     <File Path="LICENSE" />
     <File Path="MAINTAINER-README.txt" />
