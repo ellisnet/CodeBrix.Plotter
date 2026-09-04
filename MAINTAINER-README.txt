@@ -37,6 +37,17 @@ REPOSITORY LAYOUT
     CodeBrix.Plotter.Windows.slnx   the same, plus the PicoScope sample heads
                                     (Windows-only projects; do not open this on
                                     Linux or macOS)
+                                    Both solutions carry the same Solution Items
+                                    folder: .gitignore, AGENT-README.txt,
+                                    EXTRAS-README.txt, global.json,
+                                    icon-codebrix-128.png, LICENSE,
+                                    MAINTAINER-README.txt, README-INDEX.txt,
+                                    README.md and THIRD-PARTY-NOTICES.txt; and a
+                                    Tests folder carrying the test project. Keep
+                                    the two lists identical when either changes.
+    global.json                     Selects the Microsoft.Testing.Platform test
+                                    runner. Does NOT pin an SDK version. See
+                                    BUILDING and TESTING below.
     AGENT-README.txt                consumer documentation (packed into the nupkg)
     MAINTAINER-README.txt           this file
     EXTRAS-README.txt               the samples and other non-package content
@@ -95,6 +106,16 @@ BUILDING
     dotnet restore CodeBrix.Plotter.slnx
     dotnet build   CodeBrix.Plotter.slnx
 
+global.json at the repo root does NOT pin an SDK version, so the newest
+installed .NET 10 SDK is still used. It exists solely to select the test
+runner:
+
+    { "test": { "runner": "Microsoft.Testing.Platform" } }
+
+Because that setting lives in global.json rather than in the csproj, it applies
+to every `dotnet test` run anywhere in the repository, including CI. Keep the
+file committed -- see TESTING.
+
 Target framework is net10.0 only, and GenerateDocumentationFile is on, so CS1591
 fires on any public or protected member without an XML doc comment. A clean
 build is 0 warnings and 0 errors -- fix warnings at the source, never with
@@ -112,6 +133,12 @@ TESTING
 =======
 
     dotnet test CodeBrix.Plotter.slnx
+
+THE TEST RUNNER IS Microsoft.Testing.Platform (MTP), selected by global.json at
+the repo root. Do not delete that file; without it, `dotnet test` falls back to
+the older VSTest bridge. You can tell which one ran: MTP output ends in a
+"Test run summary:" block, while the VSTest bridge invokes MSBuild with
+`--target:VSTest`. The test project carries no coverage collector.
 
 The suite is the upstream OxyPlot test suite -- the tests for OxyPlot.Core and
 OxyPlot.SkiaSharp only -- ported to xUnit.v3 + SilverAssertions.

@@ -12,10 +12,10 @@ It describes a chart as an in-memory object graph -- a PlotModel holding axes,
 series, annotations and legends -- and renders that graph onto a SkiaSharp
 canvas, or exports it to PNG, JPEG, PDF or SVG.
 
-Provenance. CodeBrix.Plotter is a port of the OxyPlot project (upstream
-`develop` branch, commit 6b49a4ee: the v2.2.0 release plus the net10.0 /
-SkiaSharp upgrade commits). It consolidates the upstream OxyPlot.Core and
-OxyPlot.SkiaSharp packages into one library and one NuGet package. All
+Provenance. CodeBrix.Plotter is a port of the OxyPlot project; the exact
+upstream baseline is recorded in THIRD-PARTY-NOTICES.txt. It consolidates the
+upstream OxyPlot.Core and OxyPlot.SkiaSharp packages into one library and one
+NuGet package. All
 namespaces use "CodeBrix.Plotter" instead of "OxyPlot", and every public type
 that upstream prefixed "Oxy" uses the prefix "Plotter" instead --
 PlotterColor, PlotterColors, PlotterRect, PlotterSize, PlotterThickness,
