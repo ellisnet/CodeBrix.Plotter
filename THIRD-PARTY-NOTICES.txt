@@ -104,7 +104,7 @@ Modifications made during the port
   * Strong-name signing removed (the upstream .snk key files are not
     redistributed here).
   * The SkiaSharp renderer was migrated from SkiaSharp 3.119.2 to SkiaSharp
-    4.151.0 and its current API (SKFont-based text measurement and drawing,
+    4.151.2 and its current API (SKFont-based text measurement and drawing,
     SKSamplingOptions-based image filtering), so that the library builds
     warning-free against the SkiaSharp version used across the CodeBrix family.
   * The test suite was converted from NUnit to xUnit.v3 with SilverAssertions.
