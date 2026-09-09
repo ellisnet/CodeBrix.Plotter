@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -47,22 +47,22 @@
     them and explicit on the third.
   -->
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.2" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
     <!--
       Text shaping runs through HarfBuzz, which has its own native library.
       HarfBuzzSharp pulls in the Win32 and macOS natives transitively but not
       the Linux one, so shaping any text on Linux fails to load libHarfBuzzSharp
       without this. Its version tracks HarfBuzzSharp, not SkiaSharp.
     -->
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.200" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.151.2" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.152.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.151.2" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.152.0" />
   </ItemGroup>
 
   <ItemGroup>
