@@ -2557,9 +2557,12 @@ Feature-to-file map:
     https://github.com/ellisnet/CodeBrix.Plotter/tree/main/tests/CodeBrix.Plotter.Tests/Utilities
     https://github.com/ellisnet/CodeBrix.Plotter/tree/main/tests/CodeBrix.Plotter.Tests/Rendering
 
-A larger, real application that streams live data into a plot -- including a
-reusable SkiaRenderContext, an SKCanvas host and an axis-rescaling strategy --
-is in the repository's sample:
+A larger, real application that streams live data into a plot -- a PlotModel
+owned by a small chart class, the mutate-under-SyncRoot-then-InvalidatePlot
+update pattern from a device polling thread, a rolling time window with
+decimation, and an axis-rescaling strategy -- is in the repository's sample,
+a CodeBrix.Platform application that shows the model through the PlotterView
+add-in:
 
   https://github.com/ellisnet/CodeBrix.Plotter/tree/main/samples/PicoScope
 

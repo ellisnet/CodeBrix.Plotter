@@ -34,9 +34,14 @@ REPOSITORY LAYOUT
 =================
 
     CodeBrix.Plotter.slnx           library + tests (the everyday solution)
-    CodeBrix.Plotter.Windows.slnx   the same, plus the PicoScope sample heads
-                                    (Windows-only projects; do not open this on
+    CodeBrix.Plotter.Windows.slnx   the same, plus the sample's earlier
+                                    Windows-only WPF and WinUI heads (not
+                                    currently wired up; do not open this on
                                     Linux or macOS)
+    samples/PicoScope/PicoScope.slnx
+                                    the PicoScope sample as a CodeBrix.Platform
+                                    application: five heads, two libraries and
+                                    the tests; builds on every OS
                                     Both solutions carry the same Solution Items
                                     folder: .gitignore, AGENT-README.txt,
                                     EXTRAS-README.txt, global.json,
@@ -124,9 +129,12 @@ build is 0 warnings and 0 errors -- fix warnings at the source, never with
 GeneratePackageOnBuild is TRUE on the library project, so every build also
 produces a .nupkg (see PACKAGING AND PUBLISHING for why that matters).
 
-CodeBrix.Plotter.Windows.slnx additionally builds the PicoScope sample, whose
-WPF and WinUI heads target net10.0-windows10.0.19041.0. Building that solution
-requires Windows; use CodeBrix.Plotter.slnx everywhere else.
+The PicoScope sample has its own solution, samples/PicoScope/PicoScope.slnx,
+which builds on every OS (the Windows heads compile on Linux through
+EnableWindowsTargeting). It consumes the library through the CodeBrix.Platform
+PlotterView add-in package, not from src/, so it is not a check on the local
+library build. CodeBrix.Plotter.Windows.slnx carries the sample's earlier
+WPF and WinUI heads, which are not currently wired up and need Windows.
 
 
 TESTING

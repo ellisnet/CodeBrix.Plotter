@@ -1,8 +1,10 @@
 # PicoScope 2204A — a C# reference implementation
 
 A working sample that streams live oscilloscope traces from a **PicoScope 2204A**
-into a [CodeBrix.Plotter](../../README.md) chart, on .NET 10, in both WPF and
-WinUI 3.
+into a [CodeBrix.Plotter](../../README.md) chart, on .NET 10, as a
+[CodeBrix.Platform](https://github.com/ellisnet/CodeBrix.Platform) application
+with Linux and Windows heads. One device library drives the scope through Pico's
+`ps2000` driver on both operating systems.
 
 It is also intended as reference material. Everything the `ps2000` driver can do
 appears here, named and documented, so that "how do I do X with my scope" can be
@@ -30,6 +32,7 @@ Every capability claim below was **measured against a physical PicoScope 2204A**
 - [Troubleshooting](#troubleshooting)
 - [Licensing](#licensing)
 - [How these facts were established](#how-these-facts-were-established)
+- [Running the sample](#running-the-sample)
 
 ---
 
@@ -61,17 +64,17 @@ marshalling and runs perfectly on modern .NET, as this sample demonstrates.
 ## Quick start
 
 ```csharp
-using PicoScope.Scope;
-using PicoScope.Scope.Model;
-using PicoScope.Scope.Simulation;
-using PicoScope.Scope.Windows;
+using PicoScope.ScopeData;
+using PicoScope.ScopeData.Model;
+using PicoScope.ScopeData.Simulation;
+using PicoScope.ScopeData.Ps2000;
 
 // Register what's available. Order doesn't matter.
-PicoScopeFinder.Register(new WindowsPicoScope());
-PicoScopeFinder.Register(new SimulatedPicoScope());
+ScopeDeviceFinder.Register(new Ps2000ScopeDataDevice());
+ScopeDeviceFinder.Register(new SimulatedScopeDataDevice());
 
 // Real hardware if it opens, simulator otherwise.
-IPicoScope scope = PicoScopeFinder.FindBest();
+IScopeDataDevice scope = ScopeDeviceFinder.FindBest();
 
 scope.SetChannel(ChannelId.ChannelA, new ChannelSettings(true, Coupling.Dc, VoltageRange.Range5V));
 
@@ -91,7 +94,10 @@ scope.CloseScope();
 
 - .NET 10 SDK
 - A 64-bit process (see [bitness](#trap-5-the-driver-is-64-bit-only))
-- PicoSDK **or** the PicoScope desktop application installed, for `ps2000.dll`
+- The `ps2000` driver: on Windows, PicoSDK **or** the PicoScope desktop
+  application; on Linux, the `libps2000` package, which the `picoscope`
+  application package brings with it. See
+  [Getting the driver to load](#getting-the-driver-to-load).
 - **The PicoScope desktop application must be closed.** Only one process may hold
   the device open.
 
@@ -99,7 +105,7 @@ scope.CloseScope();
 
 ## Verified capability map
 
-Everything in this table was probed on the physical unit. `WindowsPicoScope`
+Everything in this table was probed on the physical unit. `Ps2000ScopeDataDevice`
 rediscovers all of it at open time rather than matching on the model name, so the
 code stays correct if a different 2000-series scope is attached.
 
@@ -247,7 +253,7 @@ used by every newer Pico driver, where zero (`PICO_OK`) means success.
 
 ```csharp
 // ps2000 — legacy convention
-if (Ps2000.ps2000_set_channel(handle, ch, 1, 1, range) == 0) { /* FAILED */ }
+if (Ps2000Api.ps2000_set_channel(handle, ch, 1, 1, range) == 0) { /* FAILED */ }
 
 // ps2000a and newer — PICO_STATUS convention
 if (Imports.SetChannel(handle, ch, 1, coupling, range) != 0) { /* FAILED */ }
@@ -283,13 +289,13 @@ for as long as streaming runs:
 ```csharp
 // WRONG — allocates a fresh delegate per poll and leaves the thunk's
 // lifetime to chance
-Ps2000.ps2000_get_streaming_last_values(handle, StreamingCallback);
+Ps2000Api.ps2000_get_streaming_last_values(handle, StreamingCallback);
 
 // RIGHT — one delegate, rooted in a field, for the life of the stream
-private Ps2000.GetOverviewBuffersMaxMin _streamingCallback;
+private Ps2000Api.GetOverviewBuffersMaxMin _streamingCallback;
 ...
 unsafe { _streamingCallback = StreamingCallback; }   // pointers in the signature
-Ps2000.ps2000_get_streaming_last_values(handle, _streamingCallback);
+Ps2000Api.ps2000_get_streaming_last_values(handle, _streamingCallback);
 ```
 
 Binding a method group to a delegate whose signature contains pointers requires
@@ -301,15 +307,16 @@ index 2, and so on. Without aggregation the two are identical.
 
 ### Trap 5: the driver is 64-bit only
 
-A current PicoScope install ships a 64-bit `ps2000.dll` (PE machine `0x8664`).
-An x86 build fails with `BadImageFormatException`. Set `<PlatformTarget>x64`.
+A current PicoScope install ships a 64-bit `ps2000.dll` (PE machine `0x8664`),
+and the Linux `libps2000.so` is 64-bit too. An x86 build fails with
+`BadImageFormatException`. Set `<PlatformTarget>x64`.
 
 ### Trap 6: exclusive access
 
 Only one process may hold a device open. `ps2000_open_unit` returns 0 while the
 PicoScope desktop application is running. Equally, a handle you fail to close
 keeps the device locked against every other process until yours exits — which is
-why `IPicoScope` implements `IDisposable` as a safety net on top of the explicit
+why `IScopeDataDevice` implements `IDisposable` as a safety net on top of the explicit
 `CloseScope`.
 
 ### Trap 7: the signal generator is refused during acquisition
@@ -332,12 +339,12 @@ Measured on the 2204A with `ps2000_set_sig_gen_built_in`, sine, 5 kHz, 2 Vpp:
 So the sequence is **stop → configure → restart**:
 
 ```csharp
-Ps2000.ps2000_stop(handle);
-Ps2000.ps2000_set_sig_gen_built_in(handle, 0, 2_000_000, 0, 5000f, 5000f, 0f, 0f, 0, 0);
-Ps2000.ps2000_run_streaming_ns(handle, 100, 3, 1_000_000, 0, 1, 50000);   // restart
+Ps2000Api.ps2000_stop(handle);
+Ps2000Api.ps2000_set_sig_gen_built_in(handle, 0, 2_000_000, 0, 5000f, 5000f, 0f, 0f, 0, 0);
+Ps2000Api.ps2000_run_streaming_ns(handle, 100, 3, 1_000_000, 0, 1, 50000);   // restart
 ```
 
-`WindowsPicoScope` does this for you: `SetSignalGenerator`,
+`Ps2000ScopeDataDevice` does this for you: `SetSignalGenerator`,
 `SetArbitraryWaveform` and `StopSignalGenerator` all pause any running
 acquisition, apply the change and restart it, carrying the running sample total
 across so the stream looks continuous to the caller. There is a brief gap in the
@@ -350,8 +357,17 @@ While you are here: **the 2204A caps generator amplitude at 4 V peak-to-peak.**
 
 ## Getting the driver to load
 
-This deserves its own section because it is the first thing that fails, and the
-failure looks like the driver isn't installed when it is.
+This deserves its own section because on Windows it is the first thing that
+fails, and the failure looks like the driver isn't installed when it is. On
+Linux it is the section that explains why nothing special is needed.
+
+The P/Invokes name the library by its bare name — `[DllImport("ps2000")]` — so
+the runtime probes for `ps2000.dll` on Windows and `libps2000.so` on Linux from
+one declaration. The entry points, signatures and behaviours are the same on
+both: the two drivers are built from the same `ps2000.h`, and the same
+`PicoScope.ScopeData.Ps2000` assembly runs unchanged on either.
+
+### Windows
 
 **`ps2000.dll` is usually not where the SDK says it should be.** On a machine
 with a current PicoScope 7 install, `C:\Program Files\Pico Technology\SDK\lib`
@@ -362,7 +378,7 @@ application's own folder:
 C:\Program Files\Pico Technology\PicoScope 7 T&M Stable\ps2000.dll
 ```
 
-That folder is **not on `PATH`**, so a bare `[DllImport("ps2000.dll")]` throws
+That folder is **not on `PATH`**, so a bare P/Invoke throws
 `DllNotFoundException` even though the desktop application is using the driver
 happily.
 
@@ -371,16 +387,16 @@ The fix is `NativeLibrary.SetDllImportResolver` — which exists on modern .NET 
 driver is in fact easier to load there:
 
 ```csharp
-NativeLibrary.SetDllImportResolver(typeof(Ps2000).Assembly, (name, asm, path) =>
+NativeLibrary.SetDllImportResolver(typeof(Ps2000Api).Assembly, (name, asm, path) =>
 {
-    if (!string.Equals(name, "ps2000.dll", StringComparison.OrdinalIgnoreCase))
+    if (!string.Equals(name, "ps2000", StringComparison.OrdinalIgnoreCase))
     {
         return IntPtr.Zero;
     }
 
     foreach (string dir in candidateDirectories)
     {
-        string candidate = Path.Combine(dir, name);
+        string candidate = Path.Combine(dir, "ps2000.dll");
         if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out IntPtr h))
         {
             return h;
@@ -395,39 +411,79 @@ dependency (`picoipp.dll`) from beside it, which a name-based load would not do.
 
 `Ps2000DriverLoader` searches, in order: any paths you add to
 `AdditionalSearchPaths`, then both SDK `lib` folders, then every
-`Program Files*\Pico Technology\PicoScope*` directory (the channel suffix varies —
-"Stable", "Beta", "Early Access"). `Ps2000DriverLoader.LoadedFrom` reports where
-it actually found it, and `GetSearchPaths()` gives you the list for a diagnostic
-message.
+`Program Files*\Pico Technology\PicoScope*` directory (the channel suffix varies --
+"Stable", "Beta", "Early Access"). `GetSearchPaths()` gives you the list for a
+diagnostic message.
 
-You can confirm the answer from the device itself: **unit info line 8 is the
-loaded driver's full path.**
+### Linux
+
+The `libps2000` package — from Pico's apt repository, on its own or as a
+dependency of the `picoscope` application package — installs the driver as
+`/opt/picoscope/lib/libps2000.so` and adds that folder to the system loader
+configuration (`/etc/ld.so.conf.d/picoscope.conf`). The runtime's default probe
+therefore finds it with no help at all. `Ps2000DriverLoader` still lists
+`/opt/picoscope/lib` as a fallback, for a machine where that configuration was
+not applied.
+
+The device needs no group membership and no `sudo`: the package's udev rule
+(`95-pico.rules`) opens Pico's USB devices to every user. `lsusb` lists the scope
+under vendor `0ce9`. The driver's own dependencies are ordinary system libraries
+(`libusb-1.0`, `libudev`), which the package pulls in.
+
+### Confirming what loaded
+
+On either OS the device itself will tell you: **unit info line 8 is the loaded
+driver's full path.** The sample logs it at start-up. `Ps2000DriverLoader.LoadedFrom`
+is set only when the resolver, rather than the default probe, did the loading.
 
 ---
 
 ## Architecture
 
 ```
-PicoScope.Wpf ──┐
-                ├──> PicoScope.Scope.Windows ──> PicoScope.Scope ──> CodeBrix.Plotter
-PicoScope.WinUI ┘     ps2000 interop              IPicoScope
-                      WindowsPicoScope            SimulatedPicoScope
-                                                  ScopePlot
+five platform heads ──┬──> PicoScope.Core ──────────────> PicoScope.ScopeData
+  LinuxX11            │    MainViewModel, ScopePlot        IScopeDataDevice, model types
+  LinuxWayland        │    PlotterView add-in              ScopeDeviceFinder
+  LinuxFrameBuffer    │    (brings CodeBrix.Plotter in)    SimulatedScopeDataDevice
+  Win32Skia           │                                          ▲
+  WinWpfSkia          └──> PicoScope.ScopeData.Ps2000 ───────────┘
+                           ps2000 interop, driver loader
+                           Ps2000ScopeDataDevice
 ```
 
-| Project | TFM | Contents |
-|---|---|---|
-| `PicoScope.Scope` | `net10.0` | `IPicoScope`, the model types, `SimulatedPicoScope`, `PicoScopeFinder`, `ScopePlot` |
-| `PicoScope.Scope.Windows` | `net10.0-windows` | All 32 P/Invokes, the driver loader, `WindowsPicoScope` |
-| `Shared/` | linked as source | `MainViewModel`, `ScopeChartRenderer`, `HostHelper` |
-| `PicoScope.Wpf` | `net10.0-windows10.0.19041.0` | `SKElement` host |
-| `PicoScope.WinUI` | `net10.0-windows10.0.19041.0` | `SKXamlCanvas` host |
+| Project | Contents |
+|---|---|
+| `src/libs/PicoScope.ScopeData` | `IScopeDataDevice`, the model types, `SimulatedScopeDataDevice`, `ScopeDeviceFinder`. No package references at all. |
+| `src/libs/PicoScope.ScopeData.Ps2000` | All 33 P/Invokes (`Ps2000Api`), `Ps2000DriverLoader`, `Ps2000ScopeDataDevice`. Plain `net10.0`: the one assembly runs on Windows and Linux. |
+| `src/PicoScope.Core` | `MainViewModel`, `ScopePlot`, `HostHelper`. References the CodeBrix.Platform PlotterView add-in, which brings CodeBrix.Plotter in with it. |
+| `src/PicoScope.UI` | The shared XAML: `App` and `MainPage`, whose `PlotterControl` shows `ScopePlot.Model`. |
+| `src/PicoScope.LinuxX11`, `.LinuxWayland`, `.LinuxFrameBuffer`, `.Win32Skia`, `.WinWpfSkia` | One head per platform. Each registers the device implementations in its `Program.cs`. |
+| `tests/libs/PicoScope.ScopeData.Tests` | xUnit tests for the contract, the simulator and the model types, driven through a scripted `TestScopeDataDevice`. |
 
-`PicoScope.Scope` is device-agnostic **by construction** — it has no interop and
-no Windows reference, so it cannot grow a hardware dependency by accident.
-Implementations are supplied from outside via `PicoScopeFinder.Register`.
+`PicoScope.ScopeData` is device-agnostic **by construction** — it has no interop,
+no package references and no platform reference, so it cannot grow a hardware
+or UI dependency by accident. Implementations are supplied from outside via
+`ScopeDeviceFinder.Register`, and it is each head, not the shared code, that
+decides what to register:
 
-### SimulatedPicoScope
+```csharp
+// Program.cs of every head. Order does not matter: FindBest() prefers real
+// hardware and falls back to the simulator when nothing is plugged in.
+ScopeDeviceFinder.Register(new Ps2000ScopeDataDevice());
+ScopeDeviceFinder.Register(new SimulatedScopeDataDevice());
+```
+
+### One device library, not one per operating system
+
+Nothing in `Ps2000ScopeDataDevice` is Windows-specific, and neither is anything
+in the P/Invoke declarations: the Linux `libps2000.so` exports every entry point
+the Windows `ps2000.dll` does, with the same signatures, because both are built
+from the same header. The only code that differs by OS is *where to look for the
+driver*, and `Ps2000DriverLoader` branches on that at run time. So the sample
+ships one device assembly rather than a Windows one and a Linux one that would
+be identical but for a 150-line loader.
+
+### SimulatedScopeDataDevice
 
 Not a stub. It implements the whole interface, enforces the same lifecycle rules,
 and imposes the **real 2204A capability limits** — a capture the hardware would
@@ -439,6 +495,22 @@ phase-shifted companion on channel B, with a little noise so it looks like a
 measurement rather than a formula. If the signal generator is configured, channel
 A follows it, as though the generator output were looped back into the input.
 
+### The chart
+
+`ScopePlot` (in `PicoScope.Core`) owns a CodeBrix.Plotter `PlotModel` and turns
+blocks and streaming batches into it. The page shows that model in a
+`PlotterControl` from the CodeBrix.Platform PlotterView add-in, which supplies
+the rendering and the pan/zoom/tracker interaction on every head. `ScopePlot`
+mutates the model under `PlotModel.SyncRoot` and the control renders under the
+same lock, so streaming batches are applied on the driver's polling thread
+without a dispatcher hop.
+
+### The earlier Windows-only heads
+
+`PicoScope.Wpf`, `PicoScope.WinUI` and the `Shared/` folder are the earlier WPF
+and WinUI 3 heads. They are kept in the tree but are not wired to the
+reorganised libraries and are not part of `PicoScope.slnx`.
+
 ---
 
 ## Cookbook
@@ -446,7 +518,7 @@ A follows it, as though the generator output were looped back into the input.
 ### Open and interrogate
 
 ```csharp
-using var scope = new WindowsPicoScope();
+using var scope = new Ps2000ScopeDataDevice();
 if (!scope.OpenScope())
 {
     Console.WriteLine("No device found (or the PicoScope app has it open).");
@@ -652,7 +724,7 @@ scope.StopSignalGenerator();   // holds the output at 0 V DC
 Amplitudes and offsets are in **microvolts**, and cap at 4 Vpp (`4_000_000`) on
 a 2204A. `SweepCount: 0` sweeps continuously.
 
-These calls are safe to make while streaming — `WindowsPicoScope` pauses and
+These calls are safe to make while streaming — `Ps2000ScopeDataDevice` pauses and
 resumes the acquisition around them, because the device itself refuses them
 mid-capture. See [Trap 7](#trap-7-the-signal-generator-is-refused-during-acquisition).
 
@@ -699,8 +771,10 @@ exporter.Export(plot.Model, fs);
 Two things to know:
 
 - **`PlotModel` is not thread-safe.** Streaming callbacks do not arrive on the UI
-  thread. Marshal before touching the model — `MainViewModel` does this through
-  `IChartHost.RunOnUiThread`.
+  thread. `ScopePlot` mutates the model under `PlotModel.SyncRoot`, and the
+  `PlotterControl` renders under that same lock, so batches can be applied on
+  the thread they arrive on. A hand-rolled renderer must do the same, or marshal
+  everything to one thread.
 - **Set `PlotModel.Background` explicitly.** If you style text and gridlines for
   a dark theme but leave the background unset, an exported PNG comes out white
   and everything is invisible. The on-screen canvas clears its own background, so
@@ -754,7 +828,7 @@ Timebases 24 and above are rejected.
 
 ## Complete ps2000 API reference
 
-All 32 exported functions, as declared in `Interop/Ps2000.cs`. Unless noted,
+All 32 exported functions, as declared in `Interop/Ps2000Api.cs`. Unless noted,
 **non-zero is success**.
 
 ### Lifecycle and identity
@@ -835,7 +909,8 @@ corrupts every field after the first.
 ### Calling convention
 
 The header declares these `__stdcall` on Win32. That matters only for 32-bit
-code — x64 has a single calling convention, so default marshalling is correct.
+code — x64 has a single calling convention on each operating system, so default
+marshalling is correct on Windows and Linux alike.
 
 ---
 
@@ -843,7 +918,9 @@ code — x64 has a single calling convention, so default marshalling is correct.
 
 | Symptom | Cause |
 |---|---|
-| `DllNotFoundException` | The driver isn't on the search path. See [Getting the driver to load](#getting-the-driver-to-load) |
+| `DllNotFoundException` (Windows) | The driver isn't on the search path. See [Getting the driver to load](#getting-the-driver-to-load) |
+| `DllNotFoundException` (Linux) | `libps2000` isn't installed, or `/opt/picoscope/lib` isn't in the loader path — check `ldconfig -p \| grep ps2000` |
+| `open_unit` returns 0 on Linux with the device plugged in | The udev rule is missing, so the USB device isn't writable. Reinstall `libps2000`, or add `ATTRS{idVendor}=="0ce9", MODE="0666"` to a rules file |
 | `BadImageFormatException` | 32-bit process, 64-bit driver. Set `<PlatformTarget>x64` |
 | `open_unit` returns 0 | No device, **or the PicoScope application has it open** |
 | `open_unit` returns −1 | Device found but not usable — often a half-closed handle from a previous run |
@@ -867,7 +944,7 @@ Three different things with three different terms:
 |---|---|---|
 | This sample | Repository terms (MIT) | Yes |
 | Pico's C# examples this derives from | **ISC** | Yes — keep the copyright and permission notice |
-| `ps2000.dll`, `picoipp.dll` | Pico proprietary SDK terms | Permitted, but **not** MIT |
+| `ps2000.dll` and `picoipp.dll`; `libps2000.so` and `libpicoipp.so` | Pico proprietary SDK terms | Permitted, but **not** MIT |
 
 Pico's [`picosdk-c-sharp-examples`](https://github.com/picotech/picosdk-c-sharp-examples)
 is ISC-licensed — a full grant to modify and redistribute commercially, provided
@@ -882,9 +959,9 @@ products or with data collected using Pico products") and a mission-critical
 exclusion, neither of which is open-source-compatible.
 
 This sample therefore **does not commit the driver**. It resolves it at run time
-from your own PicoSDK or PicoScope install. That keeps the repository cleanly
-licensed and avoids pinning a driver version that would drift out of step with
-whatever your machine has.
+from your own PicoSDK or PicoScope install on Windows, or from the `libps2000`
+package on Linux. That keeps the repository cleanly licensed and avoids pinning
+a driver version that would drift out of step with whatever your machine has.
 
 ---
 
@@ -907,21 +984,45 @@ physical unit:
    streaming (25 batches, 19,198 samples), ETS, triggering, the AWG, and the
    guard clauses — before any UI was built on top of it.
 
-`WindowsPicoScope.DiscoverCapabilities()` performs the same interrogation at open
-time, so the values are re-derived from whatever hardware is actually attached
-rather than hardcoded from this table.
+`Ps2000ScopeDataDevice.DiscoverCapabilities()` performs the same interrogation at
+open time, so the values are re-derived from whatever hardware is actually
+attached rather than hardcoded from this table. Running it on Linux, through
+`libps2000.so`, produced the identical capability map for the same unit.
 
 ---
 
 ## Running the sample
 
-```bash
-dotnet build samples/PicoScope/PicoScope.Windows.slnx
-```
+`PicoScope.slnx` holds every head, both libraries and the tests, and builds on
+Linux, macOS and Windows with the plain .NET SDK:
 
 ```bash
-dotnet run --project samples/PicoScope/PicoScope.Wpf/PicoScope.Wpf.csproj
+dotnet build samples/PicoScope/PicoScope.slnx
 ```
 
-With no scope attached, both heads fall back to `SimulatedPicoScope` and the
+Run the head that matches your desktop:
+
+```bash
+dotnet run --project samples/PicoScope/src/PicoScope.LinuxX11
+dotnet run --project samples/PicoScope/src/PicoScope.LinuxWayland
+dotnet run --project samples/PicoScope/src/PicoScope.Win32Skia
+dotnet run --project samples/PicoScope/src/PicoScope.WinWpfSkia
+```
+
+The console shows what the view model found — the device, the driver it loaded
+from, the discovered capabilities — and each acquisition it starts. With no
+scope attached, every head falls back to `SimulatedScopeDataDevice` and the
 status bar reads `SIMULATED`.
+
+The tests need no hardware:
+
+```bash
+dotnet test --project samples/PicoScope/tests/libs/PicoScope.ScopeData.Tests/PicoScope.ScopeData.Tests.csproj
+```
+
+If that reports "Zero tests ran" (a known runner quirk on some SDK builds), run
+the built test assembly directly, which prints the xUnit summary:
+
+```bash
+dotnet samples/PicoScope/tests/libs/PicoScope.ScopeData.Tests/bin/Debug/net10.0/PicoScope.ScopeData.Tests.dll
+```

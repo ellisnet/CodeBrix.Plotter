@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Match the namespace used by the app code -->
+    <RootNamespace>PicoScope</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
+    <PackageReference Include="CodeBrix.Platform.ApacheLicenseForever" Version="1.0.243.226" />
+    <PackageReference Include="CodeBrix.Platform.Fonts.Roboto.OflLicenseForever" Version="1.0.248.1219" />
+    <!-- The chart control. It brings the CodeBrix.Plotter engine in with it, so
+         nothing in this sample references the Plotter package directly. -->
+    <PackageReference Include="CodeBrix.Platform.PlotterView.ApacheLicenseForever" Version="1.0.243.226" />
+    <!-- CodeBrix.Platform is hard-locked to this HarfBuzzSharp build. The plotting engine's
+         SkiaSharp.HarfBuzz dependency would otherwise resolve the lower 14.2.1, which the
+         platform build rejects (UNOB0003). The heads get the pin from their runtime package;
+         this library needs it stated. -->
+    <PackageReference Include="HarfBuzzSharp" Version="14.2.1.1" />
+  </ItemGroup>
+
+  <!-- The device-agnostic scope contract. The real device (PicoScope.ScopeData.Ps2000)
+       is referenced by the heads, which register it; this project never sees it. -->
+  <ItemGroup>
+    <ProjectReference Include="..\libs\PicoScope.ScopeData\PicoScope.ScopeData.csproj" />
+  </ItemGroup>
+</Project>

@@ -8,15 +8,15 @@
        simulator and the charting; PicoScope.Scope.Windows (net10.0-windows) adds
        the ps2000 interop and the real-hardware implementation. -->
   <Folder Name="/Heads/">
-    <Project Path="PicoScope.WinUI/PicoScope.WinUI.csproj">
+    <Project Path="src/PicoScope.WinUI/PicoScope.WinUI.csproj">
       <Platform Project="x64" />
       <Deploy />
     </Project>
-    <Project Path="PicoScope.Wpf/PicoScope.Wpf.csproj" />
+    <Project Path="src/PicoScope.Wpf/PicoScope.Wpf.csproj" />
   </Folder>
   <Folder Name="/Scope/">
-    <Project Path="PicoScope.Scope/PicoScope.Scope.csproj" />
-    <Project Path="PicoScope.Scope.Windows/PicoScope.Scope.Windows.csproj" />
+    <Project Path="src/PicoScope.Scope/PicoScope.Scope.csproj" />
+    <Project Path="src/PicoScope.Scope.Windows/PicoScope.Scope.Windows.csproj" />
   </Folder>
   <Project Path="../../src/CodeBrix.Plotter/CodeBrix.Plotter.csproj" />
 </Solution>
