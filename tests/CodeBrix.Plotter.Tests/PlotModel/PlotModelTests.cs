@@ -9,6 +9,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using CodeBrix.Plotter.Axes;
 using CodeBrix.Plotter.Series;
 using CodeBrix.Plotter.Tests.ExampleLibrary;
@@ -71,19 +72,31 @@ public class PlotModelTests
     public void PlotControl_CollectedPlotControl_ReferenceShouldNotBeAlive()
     {
         var pm = new PlotModel();
-        var plot = new StubPlotView();
-        ((IPlotModel)pm).AttachPlotView(plot);
-        pm.PlotView.Should().NotBeNull();
+        AttachUnreferencedPlotView(pm);
 
-        // ReSharper disable once RedundantAssignment
-        plot = null;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
         GC.Collect();
 
-        // Verify that the reference is lost
-        // In debug builds a reference may be kept around for the debugger.
-#if !DEBUG
+        // Verify that the model did not keep the collected view alive
         pm.PlotView.Should().BeNull();
-#endif
+    }
+
+    /// <summary>
+    /// Creates a view, attaches it to <paramref name="model" /> and checks that
+    /// it is attached, without leaving any reference to it in the caller.
+    /// </summary>
+    /// <remarks>
+    /// The view is created in its own non-inlined frame because unoptimized
+    /// (tier-0 or Debug) JIT code keeps locals and stack temporaries reported
+    /// live until the method returns, so nulling a local in the test method
+    /// itself does not make the view unreachable.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void AttachUnreferencedPlotView(PlotModel model)
+    {
+        ((IPlotModel)model).AttachPlotView(new StubPlotView());
+        model.PlotView.Should().NotBeNull();
     }
 
     /// <summary>

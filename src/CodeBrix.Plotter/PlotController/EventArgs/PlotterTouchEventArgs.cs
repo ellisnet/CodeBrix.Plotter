@@ -28,6 +28,8 @@ public class PlotterTouchEventArgs : PlotterInputEventArgs
     /// <param name="previousTouches">The previous touches.</param>
     public PlotterTouchEventArgs(ScreenPoint[] currentTouches, ScreenPoint[] previousTouches)
     {
+        this.CurrentTouches = currentTouches;
+        this.PreviousTouches = previousTouches;
         this.Position = currentTouches[0];
 
         if (currentTouches.Length == previousTouches.Length)
@@ -73,4 +75,24 @@ public class PlotterTouchEventArgs : PlotterInputEventArgs
     /// </summary>
     /// <value>The translation.</value>
     public ScreenVector DeltaTranslation { get; set; }
+
+    /// <summary>
+    /// Gets or sets the positions of all current touches, in the order the touches went down.
+    /// </summary>
+    /// <value>The current touch positions, or <c>null</c> when the arguments were not created from touch arrays.</value>
+    /// <remarks>
+    /// Set by the <see cref="PlotterTouchEventArgs(ScreenPoint[], ScreenPoint[])" /> constructor. A manipulator can use
+    /// these to find the centre of a pinch; <see cref="Position" /> is always the first touch only.
+    /// </remarks>
+    public ScreenPoint[] CurrentTouches { get; set; }
+
+    /// <summary>
+    /// Gets or sets the positions of all touches before this event, in the order the touches went down.
+    /// </summary>
+    /// <value>The previous touch positions, or <c>null</c> when the arguments were not created from touch arrays.</value>
+    /// <remarks>
+    /// Set by the <see cref="PlotterTouchEventArgs(ScreenPoint[], ScreenPoint[])" /> constructor. When its length differs
+    /// from <see cref="CurrentTouches" />, a touch went down or up and the event carries no translation or scale.
+    /// </remarks>
+    public ScreenPoint[] PreviousTouches { get; set; }
 }

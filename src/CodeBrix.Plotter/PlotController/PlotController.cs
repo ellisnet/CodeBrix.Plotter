@@ -45,15 +45,14 @@ public class PlotController : ControllerBase, IPlotController
         this.BindKeyDown(PlotterKey.Up, PlotterModifierKeys.Control, PlotCommands.PanUpFine);
         this.BindKeyDown(PlotterKey.Down, PlotterModifierKeys.Control, PlotCommands.PanDownFine);
 
-        this.BindTouchDown(PlotCommands.PanZoomByTouch);
-
         // Tracker bindings: LMB
         this.BindMouseDown(PlotterMouseButton.Left, PlotCommands.SnapTrack);
         this.BindMouseDown(PlotterMouseButton.Left, PlotterModifierKeys.Control, PlotCommands.Track);
         this.BindMouseDown(PlotterMouseButton.Left, PlotterModifierKeys.Shift, PlotCommands.PointsOnlyTrack);
 
-        // Tracker bindings: Touch
-        this.BindTouchDown(PlotCommands.SnapTrackTouch);
+        // Touch bindings: one-finger drag pans, pinch zooms, a touch that does not move shows the tracker
+        // (a single command, because binding the touch gesture again replaces the earlier binding)
+        this.BindTouchDown(PlotCommands.PanZoomTrackByTouch);
 
         // Zoom in/out binding: XB1 / XB2 / mouse wheels / +/- keys
         this.BindMouseDown(PlotterMouseButton.XButton1, PlotCommands.ZoomInAt);

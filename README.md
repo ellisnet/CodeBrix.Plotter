@@ -46,7 +46,7 @@ Without those, a Linux build still compiles and then fails at run time on the fi
 * **Rendering to a SkiaSharp canvas** — `SkiaRenderContext` implements `IRenderContext` against any `SKCanvas`, so a plot can be drawn into whatever surface your application already owns
 * **Exporting** — PNG, JPEG, PDF and SVG exporters built on SkiaSharp, plus a built-in dependency-free SVG writer
 * **Text shaping** — complex scripts are shaped through SkiaSharp.HarfBuzz
-* **An input and controller model** — mouse, touch and keyboard gestures bound to pan, zoom, tracker and reset commands, ready to be wired to a host UI framework
+* **An input and controller model** — mouse, touch and keyboard gestures bound to pan, zoom, tracker and reset commands (by default touch drags to pan, pinches to zoom, and taps or holds to show the tracker), ready to be wired to a host UI framework
 * **Image decoding** — built-in PNG and BMP decoders and a PNG encoder, with no third-party imaging dependency
 
 ## Sample Code

@@ -44,6 +44,7 @@ public static class PlotCommands
         SnapTrackTouch = new DelegatePlotCommand<PlotterTouchEventArgs>((view, controller, args) => controller.AddTouchManipulator(view, new TouchTrackerManipulator(view) { Snap = true, PointsOnly = false }, args));
         PointsOnlyTrackTouch = new DelegatePlotCommand<PlotterTouchEventArgs>((view, controller, args) => controller.AddTouchManipulator(view, new TouchTrackerManipulator(view) { Snap = true, PointsOnly = true }, args));
         PanZoomByTouch = new DelegatePlotCommand<PlotterTouchEventArgs>((view, controller, args) => controller.AddTouchManipulator(view, new TouchManipulator(view), args));
+        PanZoomTrackByTouch = new DelegatePlotCommand<PlotterTouchEventArgs>((view, controller, args) => controller.AddTouchManipulator(view, new TouchPanZoomTrackerManipulator(view), args));
 
         // commands that can be triggered from key events
         PanLeft = new DelegatePlotCommand<PlotterKeyEventArgs>((view, controller, args) => HandlePan(view, args, -0.1, 0));
@@ -80,6 +81,13 @@ public static class PlotCommands
     /// Gets the pan/zoom touch command.
     /// </summary>
     public static IViewCommand<PlotterTouchEventArgs> PanZoomByTouch { get; private set; }
+
+    /// <summary>
+    /// Gets the combined touch command: a one-finger drag pans, a two-finger pinch zooms around the pinch centre, and a
+    /// touch that does not move shows the (snapping) tracker until it is released.
+    /// </summary>
+    /// <remarks>This is the touch binding of the default <see cref="PlotController" />.</remarks>
+    public static IViewCommand<PlotterTouchEventArgs> PanZoomTrackByTouch { get; private set; }
 
     /// <summary>
     /// Gets the pan command.

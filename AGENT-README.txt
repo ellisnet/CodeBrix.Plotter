@@ -1564,7 +1564,16 @@ Event arguments
         PlotterTouchEventArgs(ScreenPoint[] currentTouches,
                               ScreenPoint[] previousTouches)
         ScreenPoint Position; ScreenVector DeltaScale; ScreenVector DeltaTranslation;
+        ScreenPoint[] CurrentTouches; ScreenPoint[] PreviousTouches;
     }
+
+Position and DeltaTranslation describe the FIRST touch only; DeltaScale is the
+change in distance between the first two touches. The array constructor also
+keeps both arrays in CurrentTouches / PreviousTouches (null when the parameterless
+constructor was used), which is how a manipulator finds the centre of a pinch.
+A host view should build every touch-MOVE event with the array constructor,
+passing all active touches in the order they went down; arrays of different
+lengths (a finger went down or up) mean "no translation, no scale".
 
     enum PlotterMouseButton   { None = 0, Left = 1, Middle = 2, Right = 3,
                                 XButton1 = 4, XButton2 = 5 }
@@ -1608,7 +1617,7 @@ PlotCommands is a static class of ready-made commands (all IViewCommand<T>):
     ZoomInAt, ZoomOutAt, ZoomIn, ZoomOut, ZoomInFine, ZoomOutFine
     Track, SnapTrack, PointsOnlyTrack,
     HoverTrack, HoverSnapTrack, HoverPointsOnlyTrack
-    PanZoomByTouch, SnapTrackTouch, PointsOnlyTrackTouch
+    PanZoomByTouch, SnapTrackTouch, PointsOnlyTrackTouch, PanZoomTrackByTouch
 
 Controllers
 -----------
@@ -1637,6 +1646,24 @@ Controllers
     void Bind(PlotterTouchGesture, IViewCommand<PlotterTouchEventArgs>)
     void Bind(PlotterKeyGesture, IViewCommand<PlotterKeyEventArgs>)
     void Unbind(PlotterInputGesture); void Unbind(IViewCommand); void UnbindAll()
+
+Default touch behaviour. new PlotController() binds the touch gesture to
+PlotCommands.PanZoomTrackByTouch (a TouchPanZoomTrackerManipulator):
+
+  * a one-finger drag PANS (the plot stays under the finger);
+  * a two-finger pinch ZOOMS around the centre of the pinch (moving the pinch
+    also pans);
+  * a tap, or a touch-and-hold that does not move further than TouchSlop
+    (10 units), shows the snapping TRACKER; releasing hides it;
+  * once a touch moves beyond TouchSlop, or a second finger goes down, it is a
+    pan/pinch: the tracker is hidden and not shown again for that touch.
+
+A controller has ONE touch binding -- binding the touch gesture again replaces
+it. PanZoomByTouch (pan/pinch, no tracker), SnapTrackTouch and
+PointsOnlyTrackTouch (tracker only, no pan) keep their own behaviour when you
+bind them yourself:
+
+    controller.BindTouchDown(PlotCommands.SnapTrackTouch);   // tracker only
 
     class InputCommandBinding
     {
@@ -1711,6 +1738,9 @@ Manipulators
         : PlotManipulator<PlotterTouchEventArgs>
     class TouchTrackerManipulator(IPlotView plotView)    : TouchManipulator
         { same tracker properties as TrackerManipulator }
+    class TouchPanZoomTrackerManipulator(IPlotView plotView)
+        : PlotManipulator<PlotterTouchEventArgs>
+        { double TouchSlop; bool Snap, PointsOnly; }   // the default touch binding
 
     enum AxisPreference { None, X, Y }
 
@@ -2658,8 +2688,10 @@ CONTROLLER (root namespace)
            PlotCommands.ZoomRectangle);
     PlotCommands: Reset/ResetAt/CopyCode, PanAt/Pan{Left,Right,Up,Down}(Fine),
       ZoomRectangle/ZoomWheel(Fine)/Zoom{In,Out}(At|Fine), Track/SnapTrack/
-      PointsOnlyTrack, Hover*, PanZoomByTouch, SnapTrackTouch, PointsOnlyTrackTouch
-    Manipulators: Pan, ZoomRectangle, ZoomStep, Tracker, Touch, TouchTracker
+      PointsOnlyTrack, Hover*, PanZoomByTouch, SnapTrackTouch, PointsOnlyTrackTouch,
+      PanZoomTrackByTouch (the default: drag pans, pinch zooms, hold tracks)
+    Manipulators: Pan, ZoomRectangle, ZoomStep, Tracker, Touch, TouchTracker,
+      TouchPanZoomTracker
     TrackerHitResult; CursorType; IPlotView (you implement it)
 
 SELECTION / HIT-TESTING

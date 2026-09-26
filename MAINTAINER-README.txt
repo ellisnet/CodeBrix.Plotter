@@ -270,8 +270,18 @@ Renaming rules applied by the port, which any new or updated file must follow:
     the upstream OxyPlot copyright notice VERBATIM. Do not remove either.
   * Do not fabricate top-of-file banners on ported files.
 
-Files added by this port (no upstream original) are Skia/TypefaceResolver.cs and
-InternalsVisibleTo.cs.
+Files added by this port (no upstream original) are Skia/TypefaceResolver.cs,
+InternalsVisibleTo.cs and PlotController/Manipulators/TouchPanZoomTrackerManipulator.cs.
+
+The default PlotController's touch binding differs from upstream on purpose.
+Upstream binds the touch gesture twice (PanZoomByTouch, then SnapTrackTouch);
+a second Bind replaces the first, so upstream's default touch never pans or
+zooms. This port binds one composed command, PanZoomTrackByTouch
+(TouchPanZoomTrackerManipulator): drag pans, pinch zooms around the pinch
+centre, a touch that stays within TouchSlop shows the tracker. The three
+upstream touch commands are unchanged. PlotterTouchEventArgs gained
+CurrentTouches / PreviousTouches (set by its array constructor) so the pinch
+centre is available; do not drop them when pulling upstream changes.
 
 When pulling a fix from upstream, port the change into the renamed file rather
 than replacing the file wholesale, so the `//was previously:` marker and the
