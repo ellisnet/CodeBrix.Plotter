@@ -68,8 +68,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="4.152.0" />
-    <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.153.1" />
   </ItemGroup>
 
   <ItemGroup>

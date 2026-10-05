@@ -18,7 +18,7 @@
          SkiaSharp.HarfBuzz dependency would otherwise resolve the lower 14.2.1, which the
          platform build rejects (UNOB0003). The heads get the pin from their runtime package;
          this library needs it stated. -->
-    <PackageReference Include="HarfBuzzSharp" Version="14.2.1.1" />
+    <PackageReference Include="HarfBuzzSharp" Version="14.2.1.301" />
   </ItemGroup>
 
   <!-- The device-agnostic scope contract. The real device (PicoScope.ScopeData.Ps2000)

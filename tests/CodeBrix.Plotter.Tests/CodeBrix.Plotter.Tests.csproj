@@ -47,22 +47,22 @@
     them and explicit on the third.
   -->
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
     <!--
       Text shaping runs through HarfBuzz, which has its own native library.
       HarfBuzzSharp pulls in the Win32 and macOS natives transitively but not
       the Linux one, so shaping any text on Linux fails to load libHarfBuzzSharp
       without this. Its version tracks HarfBuzzSharp, not SkiaSharp.
     -->
-    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.200" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.301" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="4.153.1" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.152.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="4.153.1" />
   </ItemGroup>
 
   <ItemGroup>
