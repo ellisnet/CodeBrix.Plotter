@@ -605,7 +605,7 @@ scope.SetTrigger(new TriggerSettings(
     ThresholdAdc: VoltageRange.Range5V.MillivoltsToAdc(500),
     Direction: TriggerDirection.Rising,
     DelaySamples: -50f,              // trigger sits half way through the block
-    AutoTriggerMilliseconds: 1000)); // 0 waits forever — will hang if it never fires
+    AutoTriggerMilliseconds: 1000)); // 0 waits forever — hangs if the trigger condition is never met
 
 scope.DisableTrigger();
 ```
@@ -928,7 +928,7 @@ marshalling is correct on Windows and Linux alike.
 | Time axis off by 1000× | Reading `time_interval` in `time_units`. It is always ns |
 | Voltages off by ~0.8% | Scaling with 32512 instead of 32767 |
 | `set_channel` returns 0 | Unsupported channel or range — a 2204A rejects ±10 mV, ±20 mV, ±50 V, and channels C/D |
-| Streaming callback never fires | The delegate was collected. Root it in a field |
+| Streaming callback is never called | The delegate was collected. Root it in a field |
 | `BufferOverrun` constantly true | Overview buffer too small or polling too slowly |
 | Device locked after a crash | The handle was never closed. The lock clears when the process exits |
 | `set_sig_gen_built_in` returns 0 | An acquisition is running — stop it first. Or the amplitude exceeds 4 Vpp, or the frequency exceeds 100 kHz |

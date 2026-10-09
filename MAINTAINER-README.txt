@@ -122,7 +122,7 @@ to every `dotnet test` run anywhere in the repository, including CI. Keep the
 file committed -- see TESTING.
 
 Target framework is net10.0 only, and GenerateDocumentationFile is on, so CS1591
-fires on any public or protected member without an XML doc comment. A clean
+is reported for any public or protected member without an XML doc comment. A clean
 build is 0 warnings and 0 errors -- fix warnings at the source, never with
 <NoWarn>.
 
@@ -302,7 +302,7 @@ These apply to any change made to this repository.
     directives, at the top, in one contiguous block, System.* first.
   * File-scoped namespaces only (`namespace X;`). Never block-scoped.
   * XML doc comments are required on every public and protected member --
-    GenerateDocumentationFile is on, so CS1591 fires otherwise. Fix it by
+    GenerateDocumentationFile is on, so CS1591 is reported otherwise. Fix it by
     writing the comment, never by suppressing the warning.
   * No warning suppression at project level: no <NoWarn>, no
     <WarningLevel>0</WarningLevel>, no <TreatWarningsAsErrors>false</>. A clean

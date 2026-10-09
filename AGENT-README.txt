@@ -47,13 +47,12 @@ Requirements and OS limits:
 
   * .NET 10 or later. The library is net10.0-only; it does not multi-target and
     there is no netstandard build.
-  * No native binaries ship in this package. The dependency on SkiaSharp is
-    managed-only, so a consuming APPLICATION must add the SkiaSharp native
-    asset package for its own platform:
+  * No native binaries ship in this package. For net10.0, SkiaSharp brings
+    the Windows and macOS native assets in transitively
+    (SkiaSharp.NativeAssets.Win32 and SkiaSharp.NativeAssets.macOS), but not
+    the Linux one, so a consuming APPLICATION that runs on Linux must add:
 
         SkiaSharp.NativeAssets.Linux        (Linux)
-        SkiaSharp.NativeAssets.Win32        (Windows)
-        SkiaSharp.NativeAssets.macOS        (macOS)
 
     On Linux, text shaping additionally needs HarfBuzzSharp.NativeAssets.Linux;
     HarfBuzzSharp brings the Windows and macOS natives in transitively but not
@@ -95,7 +94,7 @@ KEY NAMESPACES / USINGS
                                             //   PngExporter, JpegExporter,
                                             //   PdfExporter, SvgExporter
 
-Those seven namespaces are the whole public surface. FOLDER IS NOT NAMESPACE in
+Those eight namespaces are the whole public surface. FOLDER IS NOT NAMESPACE in
 this library, and it is the single most common source of a "type or namespace
 not found" error:
 
@@ -827,7 +826,8 @@ BoxPlotSeries : XYAxisSeries
         double X, LowerWhisker, BoxBottom, Median, BoxTop, UpperWhisker { get; set; }
         double Mean { get; set; }                 // NaN unless you set it
         IList<double> Outliers { get; set; }
-        IList<double> Values { get; }             // the five box values
+        IList<double> Values { get; }             // the five box values, then
+                                                  //   Mean (if set) and Outliers
         object Tag { get; set; }
     }
 
@@ -1213,7 +1213,7 @@ TEST WITH IsUndefined()/IsAutomatic()/IsInvisible(), never against null -- a
 struct is never null, and PlotterColors.Undefined / PlotterColors.Automatic are
 distinct non-null sentinel values (0x00000000 and 0x00000001).
 
-PlotterColors is a static class of 143 named colours (AliceBlue ... YellowGreen)
+PlotterColors is a static class of 141 named colours (AliceBlue ... YellowGreen)
 plus the two sentinels PlotterColors.Undefined and PlotterColors.Automatic.
 
 PlotterColorExtensions: ChangeIntensity(factor), ChangeSaturation(factor),
@@ -1396,6 +1396,8 @@ CodeBrix.Plotter.Skia. It is IRenderContext + IDisposable.
     // read-only
     bool RendersToScreen => RenderTarget == RenderTarget.Screen;
     int  ClipCount;
+
+    // settable; see FONT RESOLUTION below
     TypefaceResolver TypefaceResolver { get; set; }
 
 RendersToScreen is derived from RenderTarget and cannot be assigned; set
@@ -1443,8 +1445,8 @@ The contract, precisely:
     the render context never disposes them, neither on resolver change nor in
     Dispose(). (Typefaces from the system lookup are owned and disposed by the
     context, as always.)
-  * TypefaceResolver is null by default, which is exactly the pre-existing
-    behaviour.
+  * TypefaceResolver is null by default, which gives the system font lookup
+    described above.
 
 
 EXPORTERS
@@ -1696,7 +1698,7 @@ A binding example:
     var controller = new PlotController();
 
     // Left-drag pans, right-drag draws a zoom rectangle, wheel zooms,
-    // Ctrl+wheel zooms in fine steps, left-click shows the tracker.
+    // Ctrl+wheel zooms in fine steps, Shift+left-click shows the tracker.
     controller.UnbindAll();
     controller.BindMouseDown(PlotterMouseButton.Left, PlotCommands.PanAt);
     controller.BindMouseDown(PlotterMouseButton.Right, PlotCommands.ZoomRectangle);
@@ -2287,6 +2289,10 @@ COMPLETE EXAMPLES
 
 9 -- Binding to your own objects instead of adding points
 ---------------------------------------------------------
+    using System.Collections.Generic;
+    using CodeBrix.Plotter;
+    using CodeBrix.Plotter.Series;
+
     public sealed class Reading
     {
         public double Seconds { get; set; }
@@ -2493,9 +2499,10 @@ COMMON PITFALLS TO AVOID
     never does. Return a default typeface from the resolver instead of null, and
     do not dispose a resolver-supplied typeface while the render context might
     still draw with it -- the context caches it, but the resolver owns it.
-  * Forgetting the native asset package. Without SkiaSharp.NativeAssets.<os>
-    (and HarfBuzzSharp.NativeAssets.Linux for shaped text on Linux) the first
-    render throws a DllNotFoundException, not a plotting error.
+  * Forgetting the native asset packages on Linux. Without
+    SkiaSharp.NativeAssets.Linux (and HarfBuzzSharp.NativeAssets.Linux for
+    shaped text) the first render throws a DllNotFoundException, not a
+    plotting error.
   * Swallowing render errors. Exceptions raised while a plot renders are
     captured; check model.GetLastPlotException() when a plot comes out blank.
   * Using OxyPlot names. There is no OxyPlot namespace and no Oxy* type in this
@@ -2518,8 +2525,9 @@ WHAT THIS PACKAGE DOES NOT DO
     upstream OxyPlot.Core.Drawing, OxyPlot.ImageSharp and OxyPlot.Pdf packages
     are not part of this port.
   * It does not ship native SkiaSharp or HarfBuzz binaries. A consuming
-    application adds the SkiaSharp.NativeAssets.* (and, on Linux,
-    HarfBuzzSharp.NativeAssets.Linux) package for its own platform.
+    application on Linux adds SkiaSharp.NativeAssets.Linux and
+    HarfBuzzSharp.NativeAssets.Linux; the Windows and macOS native assets
+    arrive transitively through SkiaSharp.
   * It cannot ENCODE JPEG through its own codecs. PngEncoder and BmpEncoder
     exist; JpegDecoder is decode-only. JPEG output comes from
     CodeBrix.Plotter.Skia.JpegExporter, which encodes through SkiaSharp.
@@ -2606,7 +2614,7 @@ QUICK REFERENCE CARD
 
 INSTALL
     dotnet add package CodeBrix.Plotter.MitLicenseForever
-    + SkiaSharp.NativeAssets.<Linux|Win32|macOS>
+    + SkiaSharp.NativeAssets.Linux       (Linux; Win32/macOS are transitive)
     + HarfBuzzSharp.NativeAssets.Linux   (shaped text on Linux)
 
 USINGS
@@ -2702,7 +2710,7 @@ SELECTION / HIT-TESTING
 COLOUR
     PlotterColor.FromRgb/FromArgb/FromAColor/FromHsv/FromUInt32/Parse/Interpolate
     IsUndefined()/IsAutomatic()/IsInvisible()/IsVisible()  -- never == null
-    PlotterColors.<143 names>, .Undefined, .Automatic
+    PlotterColors.<141 names>, .Undefined, .Automatic
     PlotterPalettes.Jet(n)/Rainbow(n)/Hot(n)/Cool(n)/Gray(n)/Hue(n)/
       HueDistinct(n)/BlackWhiteRed(n)/BlueWhiteRed(n)         -- METHODS
     PlotterPalettes.Viridis()/Plasma()/Inferno()/Magma()/Cividis()  -- n = 256

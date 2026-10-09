@@ -41,19 +41,20 @@ Without those, a Linux build still compiles and then fails at run time on the fi
 
 * **A broad set of series types** — line, area, bar, linear bar, interval bar, scatter, stem, stair-step, pie, heat map, contour, candlestick, box plot, error bar, histogram, rectangle, vector, tornado, volume, high/low, two-colour, three-colour and extrapolation variants
 * **Axis types** — linear, logarithmic, date/time, time span, category, angle, magnitude, colour and range-colour axes, with full control over ticks, gridlines, formatting and zoom/pan limits
-* **Annotations** — text, arrow, line, function, rectangle, ellipse, point, polygon, polyline, image and tile-map annotations
+* **Annotations** — text, arrow, line, function, rectangle, ellipse, point, polygon, polyline and image annotations
 * **Legends** — placement inside or outside the plot area, multi-column layouts, item ordering and custom symbol rendering
 * **Rendering to a SkiaSharp canvas** — `SkiaRenderContext` implements `IRenderContext` against any `SKCanvas`, so a plot can be drawn into whatever surface your application already owns
 * **Exporting** — PNG, JPEG, PDF and SVG exporters built on SkiaSharp, plus a built-in dependency-free SVG writer
 * **Text shaping** — complex scripts are shaped through SkiaSharp.HarfBuzz
 * **An input and controller model** — mouse, touch and keyboard gestures bound to pan, zoom, tracker and reset commands (by default touch drags to pan, pinches to zoom, and taps or holds to show the tracker), ready to be wired to a host UI framework
-* **Image decoding** — built-in PNG and BMP decoders and a PNG encoder, with no third-party imaging dependency
+* **Image decoding** — built-in PNG, BMP and JPEG decoders and PNG and BMP encoders, with no third-party imaging dependency
 
 ## Sample Code
 
 ### Building a plot and exporting it to a PNG file
 
 ```csharp
+using System;
 using System.IO;
 using CodeBrix.Plotter;
 using CodeBrix.Plotter.Axes;
